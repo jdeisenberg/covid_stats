@@ -1,0 +1,9 @@
+#dateInfo {
+  font-size: 18pt;
+  width: 400px;
+  text-align: center;
+}
+
+canvas {
+  border:1px solid gray;
+}
