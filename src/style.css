@@ -7,3 +7,22 @@
 canvas {
   border:1px solid gray;
 }
+
+table.open td {
+  border: 1px solid gray;
+  margin: 3px;
+  padding: 3px;
+}
+
+table.open th {
+  border-width: 0 2px 2px 0;
+  border-style: none solid solid none;
+  border-color: gray;
+  margin: 3px;
+  padding: 3px;
+}
+
+.arrow {
+  cursor: pointer;
+}
+
