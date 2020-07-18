@@ -5,6 +5,11 @@ var Belt_Array = require("bs-platform/lib/js/belt_Array.js");
 var Caml_array = require("bs-platform/lib/js/caml_array.js");
 var Caml_format = require("bs-platform/lib/js/caml_format.js");
 
+var csv = {
+  dates: [],
+  states: []
+};
+
 var monthNames = [
   "Jan",
   "Feb",
@@ -19,14 +24,6 @@ var monthNames = [
   "Nov",
   "Dec"
 ];
-
-var csv = {
-  contents: {
-    states: [],
-    dates: [],
-    totalCases: []
-  }
-};
 
 function analyzeData(cases, population) {
   var processPopulation = function (lines, _acc, _total, _state, _index) {
@@ -68,8 +65,10 @@ function analyzeData(cases, population) {
       continue ;
     };
   };
-  var adder = function (f, s) {
-    return f + Caml_format.caml_float_of_string(s);
+  var addCases = function (total, items) {
+    return Belt_Array.zipByU(total, items, (function (f, s) {
+                  return f + Caml_format.caml_float_of_string(s);
+                }));
   };
   var processCases = function (lines, _acc, _total, _state, _index) {
     while(true) {
@@ -78,27 +77,21 @@ function analyzeData(cases, population) {
       var total = _total;
       var acc = _acc;
       if (index === lines.length) {
-        return acc.concat([[
-                      state,
-                      total
-                    ]]);
+        return acc.concat([total]);
       }
       var items = Caml_array.caml_array_get(lines, index).split(",");
       if (items.length >= total.length) {
         var countyState = Caml_array.caml_array_get(items, 2);
         if (countyState === state) {
           _index = index + 1 | 0;
-          _total = Belt_Array.zipByU(total, items.slice(4), adder);
+          _total = addCases(total, items.slice(4));
           continue ;
         }
         if (state !== "") {
           _index = index + 1 | 0;
           _state = countyState;
           _total = Belt_Array.make(total.length, 0.0);
-          _acc = acc.concat([[
-                  state,
-                  total
-                ]]);
+          _acc = acc.concat([total]);
           continue ;
         }
         _index = index + 1 | 0;
@@ -109,6 +102,28 @@ function analyzeData(cases, population) {
       continue ;
     };
   };
+  var makeStateArray = function (statePopulations, stateCases) {
+    var _acc = [];
+    var _index = 0;
+    while(true) {
+      var index = _index;
+      var acc = _acc;
+      if (index === stateCases.length) {
+        return acc;
+      }
+      var len = Caml_array.caml_array_get(stateCases, index).length;
+      var total = Caml_array.caml_array_get(Caml_array.caml_array_get(stateCases, index), len - 1 | 0);
+      _index = index + 1 | 0;
+      _acc = acc.concat([{
+              name: Caml_array.caml_array_get(statePopulations, index)[0],
+              population: Caml_array.caml_array_get(statePopulations, index)[1],
+              cumulativeCasesPerDay: Caml_array.caml_array_get(stateCases, index),
+              totalCases: total,
+              pastWeekCases: total - Caml_array.caml_array_get(Caml_array.caml_array_get(stateCases, index), len - 8 | 0)
+            }]);
+      continue ;
+    };
+  };
   var popLines = population.split("\n");
   var statePopulations = processPopulation(popLines, [], 0.0, "", 1);
   var caseLines = cases.split("\n");
@@ -116,11 +131,9 @@ function analyzeData(cases, population) {
   var dates = caseHeader.split(",").slice(4);
   var emptyTotals = Belt_Array.make(dates.length, 0.0);
   var stateCases = processCases(caseLines, [], emptyTotals, "", 1);
-  csv.contents = {
-    states: statePopulations,
-    dates: dates,
-    totalCases: stateCases
-  };
+  csv.dates = dates;
+  csv.states = makeStateArray(statePopulations, stateCases);
+  console.log(Caml_array.caml_array_get(csv.states, 0));
   
 }
 
@@ -144,8 +157,8 @@ console.log("About to fetch data");
 
 fetchData(undefined);
 
-exports.monthNames = monthNames;
 exports.csv = csv;
+exports.monthNames = monthNames;
 exports.analyzeData = analyzeData;
 exports.getPopulation = getPopulation;
 exports.fetchData = fetchData;
