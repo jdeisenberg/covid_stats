@@ -104,6 +104,39 @@ function byTotal(indexA, indexB) {
   }
 }
 
+function setHeaders(param) {
+  var setChosen = function (id, chosen) {
+    var element = document.getElementById(id);
+    if (!(element == null)) {
+      if (chosen) {
+        element.setAttribute("class", "arrow chosen");
+      } else {
+        element.setAttribute("class", "arrow");
+      }
+      return ;
+    }
+    
+  };
+  var setTitle = function (titleStr) {
+    var setArrow = function (dirStr) {
+      var dir = directionFromString(dirStr);
+      return setChosen(titleStr + "_" + dirStr, columnFromString(titleStr) === pageState.column && dir === pageState.direction);
+    };
+    var col = columnFromString(titleStr);
+    setChosen(titleStr, col === pageState.column);
+    return Belt_Array.forEach([
+                "Ascending",
+                "Descending"
+              ], setArrow);
+  };
+  var wordIds = [
+    "State",
+    "Total",
+    "Per100K"
+  ];
+  return Belt_Array.forEach(wordIds, setTitle);
+}
+
 function sortIndices(indices) {
   console.log(columnToString(pageState.column));
   var match = pageState.column;
@@ -112,18 +145,21 @@ function sortIndices(indices) {
   return result;
 }
 
-function makeRow(index) {
+function makeRow(absoluteIndex, rankIndex) {
   var tr = document.createElement("tr");
+  var td0 = document.createElement("td");
+  td0.innerHTML = String(absoluteIndex + 1 | 0);
   var td1 = document.createElement("td");
-  td1.innerHTML = Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).name;
+  td1.innerHTML = Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).name;
   var td2 = document.createElement("td");
   td2.setAttribute("class", "rightAlign");
-  var total = pageState.column === /* Total */1 ? Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).totalCases : Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).pastWeekCases;
+  var total = pageState.period === /* All */0 ? Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).totalCases : Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).pastWeekCases;
   td2.innerHTML = total.toFixed(0);
   var td3 = document.createElement("td");
   td3.setAttribute("class", "rightAlign");
-  var perCapita = pageState.column === /* Total */1 ? Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).totalCases : Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).pastWeekCases;
-  td3.innerHTML = to100K(perCapita, index).toFixed(2);
+  var perCapita = pageState.period === /* All */0 ? Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).totalCases : Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).pastWeekCases;
+  td3.innerHTML = to100K(perCapita, rankIndex).toFixed(2);
+  tr.appendChild(td0);
   tr.appendChild(td1);
   tr.appendChild(td2);
   tr.appendChild(td3);
@@ -148,18 +184,98 @@ function removeChildren(parent) {
 
 function drawTable(param) {
   var tableElement = document.getElementById("tableBody");
-  if (tableElement == null) {
-    return ;
+  if (!(tableElement == null)) {
+    removeChildren(tableElement);
+    var newIndices = sortIndices(Belt_Array.makeBy(Data$Covid_stats.csv.states.length, (function (i) {
+                return i;
+              })));
+    console.log("sorted: ", newIndices);
+    Belt_Array.mapWithIndex(newIndices, makeRow);
   }
-  removeChildren(tableElement);
-  var newIndices = sortIndices(Belt_Array.makeBy(Data$Covid_stats.csv.states.length, (function (i) {
-              return i;
-            })));
-  console.log("sorted: ", newIndices);
-  Belt_Array.map(newIndices, makeRow);
+  return setHeaders(undefined);
+}
+
+function changeColumn(evt) {
+  var col = evt.target;
+  pageState.column = columnFromString(col.id);
+  return drawTable(undefined);
+}
+
+function changeDirection(evt) {
+  var colDir = evt.target;
+  var parts = colDir.id.split("_");
+  pageState.column = columnFromString(Caml_array.caml_array_get(parts, 0));
+  pageState.direction = directionFromString(Caml_array.caml_array_get(parts, 1));
+  return drawTable(undefined);
+}
+
+function changeTimePeriod(evt) {
+  var menu = evt.target;
+  pageState.period = menu.value === "1" ? /* PastWeek */1 : /* All */0;
+  return drawTable(undefined);
+}
+
+function addClick(handler, element) {
+  element.addEventListener("click", handler);
   
 }
 
+function setEventHandlers(param) {
+  Belt_Array.forEach([
+        "State",
+        "Total",
+        "Per100K"
+      ], (function (heading) {
+          var element = document.getElementById(heading);
+          if (!(element == null)) {
+            addClick(changeColumn, element);
+            return Belt_Array.forEach([
+                        "Ascending",
+                        "Descending"
+                      ], (function (arrow) {
+                          var element = document.getElementById(heading + "_" + arrow);
+                          if (!(element == null)) {
+                            return addClick(changeDirection, element);
+                          }
+                          
+                        }));
+          }
+          
+        }));
+  var element = document.getElementById("timePeriod");
+  if (!(element == null)) {
+    return addClick(changeTimePeriod, element);
+  }
+  
+}
+
+function setTimePeriods(param) {
+  var time1 = document.getElementById("timePeriod1");
+  var time2 = document.getElementById("timePeriod2");
+  var len = Data$Covid_stats.csv.dates.length;
+  if (!(time1 == null) && !(time2 == null)) {
+    time1.innerHTML = time1.innerHTML + " " + Caml_array.caml_array_get(Data$Covid_stats.csv.dates, len - 8 | 0) + " - " + Caml_array.caml_array_get(Data$Covid_stats.csv.dates, len - 1 | 0);
+    time2.innerHTML = time2.innerHTML + " " + Caml_array.caml_array_get(Data$Covid_stats.csv.dates, 0) + " - " + Caml_array.caml_array_get(Data$Covid_stats.csv.dates, len - 1 | 0);
+    return ;
+  }
+  
+}
+
+var D;
+
+var Doc;
+
+var Elem;
+
+var $$Node;
+
+var Evt;
+
+exports.D = D;
+exports.Doc = Doc;
+exports.Elem = Elem;
+exports.$$Node = $$Node;
+exports.Evt = Evt;
 exports.columnToString = columnToString;
 exports.columnFromString = columnFromString;
 exports.directionToString = directionToString;
@@ -170,8 +286,15 @@ exports.pageState = pageState;
 exports.to100K = to100K;
 exports.byStateName = byStateName;
 exports.byTotal = byTotal;
+exports.setHeaders = setHeaders;
 exports.sortIndices = sortIndices;
 exports.makeRow = makeRow;
 exports.removeChildren = removeChildren;
 exports.drawTable = drawTable;
+exports.changeColumn = changeColumn;
+exports.changeDirection = changeDirection;
+exports.changeTimePeriod = changeTimePeriod;
+exports.addClick = addClick;
+exports.setEventHandlers = setEventHandlers;
+exports.setTimePeriods = setTimePeriods;
 /* No side effect */

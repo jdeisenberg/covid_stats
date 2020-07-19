@@ -7,7 +7,12 @@ let getPopulation = (cases: string) => {
   open Js.Promise;
   Fetch.fetch("covid_county_population_usafacts.csv")
   |> then_(Fetch.Response.text)
-  |> then_(population => {Data.analyzeData(cases, population); Page.drawTable()} |> resolve);
+  |> then_(population => {
+    Data.analyzeData(cases, population);
+    Page.setEventHandlers();
+    Page.setTimePeriods();
+    Page.drawTable();
+    } |> resolve);
 }
 
 let fetchData = () => {
@@ -19,8 +24,7 @@ let fetchData = () => {
 }
 
 fetchData();
-/*
-*/
+
 
 
 

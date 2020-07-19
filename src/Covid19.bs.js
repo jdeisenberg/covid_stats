@@ -23,7 +23,7 @@ function getPopulation(cases) {
   return fetch("covid_county_population_usafacts.csv").then(function (prim) {
                 return prim.text();
               }).then(function (population) {
-              return Promise.resolve((Data$Covid_stats.analyzeData(cases, population), Page$Covid_stats.drawTable(undefined)));
+              return Promise.resolve((Data$Covid_stats.analyzeData(cases, population), Page$Covid_stats.setEventHandlers(undefined), Page$Covid_stats.setTimePeriods(undefined), Page$Covid_stats.drawTable(undefined)));
             });
 }
 

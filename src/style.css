@@ -29,9 +29,11 @@ table.open th {
 
 .arrow {
   cursor: pointer;
+  color: gray;
 }
 
 .chosen {
   font-weight: bold;
+  color: red;
 }
 

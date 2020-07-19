@@ -1,3 +1,9 @@
+module D = Webapi.Dom;
+module Doc = Webapi.Dom.Document;
+module Elem = Webapi.Dom.Element;
+module Node = Webapi.Dom.Node;
+module Evt = Webapi.Dom.Event;
+
 type column =
   | State
   | Total
@@ -105,36 +111,34 @@ let byTotal = (indexA: int, indexB: int): int => {
 
 
 let setHeaders = () => {
-  open Webapi.Dom
-
-  let setChosenTitle = (id: string, chosen: bool): unit => {
-    let el = Document.getElementById(id, document);
-    switch (el) {
+  let setChosen = (id: string, chosen: bool): unit => {
+    switch (Doc.getElementById(id, D.document)) {
       | Some(element) => {
           if (chosen) {
-            Element.setAttribute("class", "chosen", element);
+            Elem.setAttribute("class", "arrow chosen", element);
           } else {
-            Element.removeAttribute("class", element);
+            Elem.setAttribute("class", "arrow", element);
           }
         }
       | None => ()
     }
   }
   
-  let setArrow = (str) => {
-    let parts = Js.String2.split(str, "_");
-    if (Belt.Array.length(parts) == 1) {
-      let col = columnToString(parts[0]);
-      setChosen(col, true);
-    } else {
-      ()
+  let setTitle = (titleStr) => {
+  
+    let setArrow = (dirStr) => {
+      let dir = directionFromString(dirStr);
+      setChosen(titleStr ++ "_" ++ dirStr, 
+        columnFromString(titleStr) == pageState.column && dir == pageState.direction);
     }
+    
+    let col = columnFromString(titleStr);
+    setChosen(titleStr, col == pageState.column);
+    Belt.Array.forEach(["Ascending", "Descending"], setArrow);
   }
-      
-  let arrowIds = ["State_Ascending", "State_Descending", "Total_Ascending", "Total_Descending",
-    "Per100K_Ascending", "Per100K_Descending"];
+    
   let wordIds = ["State", "Total", "Per100K"];
-  Belt.Array.forEach(wordIds, setArrow)
+  Belt.Array.forEach(wordIds, setTitle)
 }
 
 let sortIndices = (indices: array<int>): array<int> => {
@@ -147,36 +151,39 @@ let sortIndices = (indices: array<int>): array<int> => {
   result;
 }
 
-let makeRow = (index) => {
-  open Webapi.Dom;
+let makeRow = (absoluteIndex, rankIndex) => {
 
-  let tr = document |> Document.createElement("tr");
-  let td1 = document |> Document.createElement("td");
-  Element.setInnerHTML(td1, Data.csv.states[index].name);
+  let tr = Doc.createElement("tr", D.document);
   
-  let td2 = document |> Document.createElement("td");
-  Element.setAttribute("class", "rightAlign", td2);
-  let total = (pageState.column == Total) ? Data.csv.states[index].totalCases :
-    Data.csv.states[index].pastWeekCases;
-  Element.setInnerHTML(td2, Js.Float.toFixedWithPrecision(total, ~digits=0));
+  let td0 = Doc.createElement("td", D.document);
+  Elem.setInnerHTML(td0, string_of_int(absoluteIndex + 1));
+    
+  let td1 = Doc.createElement("td", D.document);
+  Elem.setInnerHTML(td1, Data.csv.states[rankIndex].name);
   
-  let td3 = document |> Document.createElement("td");
-  Element.setAttribute("class", "rightAlign", td3);
-  let perCapita = (pageState.column == Total) ? Data.csv.states[index].totalCases :
-    Data.csv.states[index].pastWeekCases;
-  Element.setInnerHTML(td3, Js.Float.toFixedWithPrecision(to100K(perCapita, index), ~digits=2));
-  Node.appendChild(Element.asNode(td1), Element.asNode(tr));
-  Node.appendChild(Element.asNode(td2), Element.asNode(tr));
-  Node.appendChild(Element.asNode(td3), Element.asNode(tr))
-  let table = document |> Document.getElementById("tableBody");
+  let td2 = Doc.createElement("td", D.document);
+  Elem.setAttribute("class", "rightAlign", td2);
+  let total = (pageState.period == All) ? Data.csv.states[rankIndex].totalCases :
+    Data.csv.states[rankIndex].pastWeekCases;
+  Elem.setInnerHTML(td2, Js.Float.toFixedWithPrecision(total, ~digits=0));
+  
+  let td3 = Doc.createElement("td", D.document);
+  Elem.setAttribute("class", "rightAlign", td3);
+  let perCapita = (pageState.period == All) ? Data.csv.states[rankIndex].totalCases :
+    Data.csv.states[rankIndex].pastWeekCases;
+  Elem.setInnerHTML(td3, Js.Float.toFixedWithPrecision(to100K(perCapita, rankIndex), ~digits=2));
+  Node.appendChild(Elem.asNode(td0), Elem.asNode(tr));
+  Node.appendChild(Elem.asNode(td1), Elem.asNode(tr));
+  Node.appendChild(Elem.asNode(td2), Elem.asNode(tr));
+  Node.appendChild(Elem.asNode(td3), Elem.asNode(tr))
+  let table = Doc.getElementById("tableBody", D.document);
   switch (table) {
-    | Some(el) => Node.appendChild(Element.asNode(tr), Element.asNode(el))
+    | Some(el) => Node.appendChild(Elem.asNode(tr), Elem.asNode(el))
     | None => ()
   }
 }
 
 let rec removeChildren = (parent): unit => {
-  open Webapi.Dom;
   let lastChild = Node.lastChild(parent);
   switch (lastChild) {
     | Some(child) => {
@@ -188,16 +195,86 @@ let rec removeChildren = (parent): unit => {
 }
 
 let drawTable = () => {
-  open Webapi.Dom;
   open Belt.Array;
-  let tableElement = document |> Document.getElementById("tableBody");
+  let tableElement = Doc.getElementById("tableBody", D.document);
   switch (tableElement) {
     | Some(element) => {
-        let _ = removeChildren(Element.asNode(element));
+        let _ = removeChildren(Elem.asNode(element));
         let newIndices = sortIndices(makeBy(length(Data.csv.states), (i) => i));
         Js.log2("sorted: ", newIndices);
-        let _ = map(newIndices, makeRow);
+        let _ = mapWithIndex(newIndices, makeRow);
       }
     | None => ()
   }
+  setHeaders();
 }
+
+let changeColumn = (evt) => {
+  let col = D.EventTarget.unsafeAsElement(Evt.target(evt));
+  pageState.column = columnFromString(Elem.id(col));
+  drawTable();
+}
+
+let changeDirection = (evt) => {
+  let colDir = D.EventTarget.unsafeAsElement(Evt.target(evt));
+  let parts = Js.String2.split(Elem.id(colDir), "_");
+  pageState.column = columnFromString(parts[0]);
+  pageState.direction = directionFromString(parts[1]);
+  drawTable();
+}
+
+let changeTimePeriod = (evt) => {
+  let menu = Elem.unsafeAsHtmlElement(D.EventTarget.unsafeAsElement(Evt.target(evt)));
+  pageState.period = (D.HtmlElement.value(menu) == "1") ? PastWeek : All;
+  drawTable();
+}
+
+// utility routine
+let addClick = (handler, element) => {
+  D.EventTarget.addEventListener("click", handler, Elem.asEventTarget(element));
+}
+
+let setEventHandlers = () => {
+
+  let attachDirectionEvent = (heading, arrow) => {
+    switch (Doc.getElementById(heading ++ "_" ++ arrow, D.document)) {
+      | Some(element) => addClick(changeDirection, element)
+      | None => ();
+    }
+  }
+
+  Belt.Array.forEach(["State", "Total", "Per100K"],
+    (heading) => {
+      switch (Doc.getElementById(heading, D.document)) {
+        | Some(element) => {
+            addClick(changeColumn, element);
+            Belt.Array.forEach(["Ascending", "Descending"],
+              (arrow) => {attachDirectionEvent(heading, arrow)})
+            }
+        | None => ()
+      }
+    });
+    
+  switch (Doc.getElementById("timePeriod", D.document)) {
+    | Some(element) => addClick(changeTimePeriod, element)
+    | None => ()
+  }
+    
+}
+
+let setTimePeriods = () => {
+  let time1 = Doc.getElementById("timePeriod1", D.document);
+  let time2 = Doc.getElementById("timePeriod2", D.document);
+  let len = Belt.Array.length(Data.csv.dates);
+  switch ((time1, time2)) {
+    | (Some(elem1), Some(elem2)) => {
+        Elem.setInnerHTML(elem1, Elem.innerHTML(elem1) ++ " " ++ Data.csv.dates[len - 8] ++ " - "
+          ++ Data.csv.dates[len - 1])
+        Elem.setInnerHTML(elem2, Elem.innerHTML(elem2) ++ " " ++ Data.csv.dates[0] ++ " - "
+          ++ Data.csv.dates[len - 1])
+        }
+    | (_, _) => ()
+  }
+}
+
+
