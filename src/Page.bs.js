@@ -134,20 +134,7 @@ function setHeaders(param) {
     "Total",
     "Per100K"
   ];
-  Belt_Array.forEach(wordIds, setTitle);
-  var t1 = document.getElementById("timePeriod1");
-  var t2 = document.getElementById("timePeriod2");
-  if (!(t1 == null) && !(t2 == null)) {
-    if (pageState.period === /* All */0) {
-      t2.setAttribute("selected", "selected");
-      t1.removeAttribute("selected");
-    } else {
-      t1.setAttribute("selected", "selected");
-      t2.removeAttribute("selected");
-    }
-    return ;
-  }
-  
+  return Belt_Array.forEach(wordIds, setTitle);
 }
 
 function sortIndices(indices) {

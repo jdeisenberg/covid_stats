@@ -139,7 +139,7 @@ let setHeaders = () => {
     
   let wordIds = ["State", "Total", "Per100K"];
   Belt.Array.forEach(wordIds, setTitle)
-  
+  /*
   let t1 = Doc.getElementById("timePeriod1", D.document);
   let t2 = Doc.getElementById("timePeriod2", D.document);
   switch ((t1, t2)) {
@@ -154,6 +154,7 @@ let setHeaders = () => {
       }
     | (_, _) =>();
   }
+  */
 
 }
 
