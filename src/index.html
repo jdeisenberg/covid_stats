@@ -13,33 +13,38 @@
 	<article>
 	<p>
     <select id="timePeriod">
-      <option value="0">Choose time period</option>
-      <option value="1">All Days</option>
-      <option value="2">Last 7 Days</option>
+      <option value="1" id="timePeriod1">Last 7 Days</option>
+      <option value="2" id="timePeriod2">All Days</option>
     </select>
   </p>
+  
+  <p>Click a column header to sort by that column, and click an arrow to
+  choose direction of sort (low to high or high to low)</p>
   
 	<table class="open">
     <thead>
       <tr>
-        <th>State
-          <span class="arrow">&uarr;</span>
-          <span class="arrow">&darr;</span> &nbsp;
+        <th>Rank</th>
+        <th><span class="arrow" id="State">State</span>
+          <span class="arrow" id="State_Ascending">&uarr;</span>
+          <span class="arrow" id="State_Descending">&darr;</span> &nbsp;
         </th>
-        <th>Total Cases
-          <span class="arrow">&uarr;</span>
-          <span class="arrow">&darr;</span> &nbsp;
+        <th><span class="arrow" id="Total">Total Cases</span>
+          <span class="arrow" id="Total_Ascending">&uarr;</span>
+          <span class="arrow" id="Total_Descending">&darr;</span> &nbsp;
         </th>
-        <th>Cases Per 100K
-          <span class="arrow">&uarr;</span>
-          <span class="arrow">&darr;</span> &nbsp;
+        <th><span class="arrow" id="Per100K">Cases Per 100K</span>
+          <span class="arrow" id="Per100K_Ascending">&uarr;</span>
+          <span class="arrow" id="Per100K_Descending">&darr;</span> &nbsp;
         </th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tableBody">
     </tbody>
   </table>
-     
+  <script type="text/javascript">
+  console.log(document.getElementById("tableBody"));
+  </script>
   <script type="text/javascript" src="Covid19.bs.js"></script>
 </body>
 </html>
