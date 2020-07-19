@@ -139,15 +139,30 @@ let setHeaders = () => {
     
   let wordIds = ["State", "Total", "Per100K"];
   Belt.Array.forEach(wordIds, setTitle)
+  
+  let t1 = Doc.getElementById("timePeriod1", D.document);
+  let t2 = Doc.getElementById("timePeriod2", D.document);
+  switch ((t1, t2)) {
+    | (Some(el1), Some(el2)) => {
+        if (pageState.period == All) {
+          Elem.setAttribute("selected", "selected", el2);
+          Elem.removeAttribute("selected", el1);
+        } else {
+          Elem.setAttribute("selected", "selected", el1);
+          Elem.removeAttribute("selected", el2);
+        }
+      }
+    | (_, _) =>();
+  }
+
 }
 
 let sortIndices = (indices: array<int>): array<int> => {
-  Js.log(columnToString(pageState.column))
   let result = switch (pageState.column) {
     | State => Belt.SortArray.stableSortBy(indices, byStateName)
     | _ => Belt.SortArray.stableSortBy(indices, byTotal)
   }
-  Js.log(result);
+  // Js.log(result);
   result;
 }
 
@@ -201,7 +216,6 @@ let drawTable = () => {
     | Some(element) => {
         let _ = removeChildren(Elem.asNode(element));
         let newIndices = sortIndices(makeBy(length(Data.csv.states), (i) => i));
-        Js.log2("sorted: ", newIndices);
         let _ = mapWithIndex(newIndices, makeRow);
       }
     | None => ()

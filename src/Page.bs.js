@@ -134,15 +134,29 @@ function setHeaders(param) {
     "Total",
     "Per100K"
   ];
-  return Belt_Array.forEach(wordIds, setTitle);
+  Belt_Array.forEach(wordIds, setTitle);
+  var t1 = document.getElementById("timePeriod1");
+  var t2 = document.getElementById("timePeriod2");
+  if (!(t1 == null) && !(t2 == null)) {
+    if (pageState.period === /* All */0) {
+      t2.setAttribute("selected", "selected");
+      t1.removeAttribute("selected");
+    } else {
+      t1.setAttribute("selected", "selected");
+      t2.removeAttribute("selected");
+    }
+    return ;
+  }
+  
 }
 
 function sortIndices(indices) {
-  console.log(columnToString(pageState.column));
   var match = pageState.column;
-  var result = match !== 0 ? Belt_SortArray.stableSortBy(indices, byTotal) : Belt_SortArray.stableSortBy(indices, byStateName);
-  console.log(result);
-  return result;
+  if (match !== 0) {
+    return Belt_SortArray.stableSortBy(indices, byTotal);
+  } else {
+    return Belt_SortArray.stableSortBy(indices, byStateName);
+  }
 }
 
 function makeRow(absoluteIndex, rankIndex) {
@@ -189,7 +203,6 @@ function drawTable(param) {
     var newIndices = sortIndices(Belt_Array.makeBy(Data$Covid_stats.csv.states.length, (function (i) {
                 return i;
               })));
-    console.log("sorted: ", newIndices);
     Belt_Array.mapWithIndex(newIndices, makeRow);
   }
   return setHeaders(undefined);
