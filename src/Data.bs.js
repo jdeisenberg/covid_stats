@@ -11,7 +11,6 @@ var csv = {
 };
 
 function analyzeData(cases, population) {
-  console.log("Starting to analyze data");
   var processPopulation = function (lines, _acc, _total, _state, _index) {
     while(true) {
       var index = _index;

@@ -21,8 +21,6 @@ type popInfo = (string, float);
 let analyzeData = (cases: string, population: string) => {
   open Js.Array2;
   
-  Js.log("Starting to analyze data");
-
   /* Get an array of state names and populations from population.csv */
   let rec processPopulation = (lines: array<string>,
     acc: array<popInfo>, total: float, state: string, index:int): array<popInfo> => {
@@ -101,6 +99,7 @@ let analyzeData = (cases: string, population: string) => {
     }
     helper([], 0);
   }
+
 
   /* Get the total population for states */
   let popLines = Js.String2.split(population, "\n");

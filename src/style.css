@@ -14,15 +14,24 @@ table.open td {
   padding: 3px;
 }
 
+.rightAlign {
+  text-align: right;
+}
+
 table.open th {
   border-width: 0 2px 2px 0;
   border-style: none solid solid none;
   border-color: gray;
   margin: 3px;
   padding: 3px;
+  font-weight: normal;
 }
 
 .arrow {
   cursor: pointer;
+}
+
+.chosen {
+  font-weight: bold;
 }
 
