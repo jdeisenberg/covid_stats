@@ -3,163 +3,92 @@
 
 var Belt_Array = require("bs-platform/lib/js/belt_Array.js");
 var Caml_array = require("bs-platform/lib/js/caml_array.js");
-var Caml_format = require("bs-platform/lib/js/caml_format.js");
+var Data$Covid_stats = require("./Data.bs.js");
 
-var csv = {
-  dates: [],
-  states: []
+var pageState = {
+  col: /* State */0,
+  dir: /* Ascending */0,
+  period: /* PastWeek */1,
+  indices: []
 };
 
-var monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
-];
+function byStateName(indexA, indexB) {
+  var states = Data$Covid_stats.csv.states;
+  var result = Caml_array.caml_array_get(states, indexA).name > Caml_array.caml_array_get(states, indexB).name ? 1 : (
+      Caml_array.caml_array_get(states, indexA).name < Caml_array.caml_array_get(states, indexB).name ? -1 : 0
+    );
+  if (pageState.dir === /* Ascending */0) {
+    return result;
+  } else {
+    return -result | 0;
+  }
+}
 
-function analyzeData(cases, population) {
-  var processPopulation = function (lines, _acc, _total, _state, _index) {
-    while(true) {
-      var index = _index;
-      var state = _state;
-      var total = _total;
-      var acc = _acc;
-      if (index === lines.length) {
-        return acc.concat([[
-                      state,
-                      total
-                    ]]);
-      }
-      var items = Caml_array.caml_array_get(lines, index).split(",");
-      if (items.length === 4) {
-        var countyState = Caml_array.caml_array_get(items, 2);
-        var countyPop = Caml_format.caml_float_of_string(Caml_array.caml_array_get(items, 3));
-        if (countyState === state) {
-          _index = index + 1 | 0;
-          _total = total + countyPop;
-          continue ;
-        }
-        if (state !== "") {
-          _index = index + 1 | 0;
-          _state = countyState;
-          _total = 0.0;
-          _acc = acc.concat([[
-                  state,
-                  total
-                ]]);
-          continue ;
-        }
-        _index = index + 1 | 0;
-        _state = countyState;
-        continue ;
-      }
-      _index = index + 1 | 0;
-      continue ;
-    };
-  };
-  var addCases = function (total, items) {
-    return Belt_Array.zipByU(total, items, (function (f, s) {
-                  return f + Caml_format.caml_float_of_string(s);
-                }));
-  };
-  var processCases = function (lines, _acc, _total, _state, _index) {
-    while(true) {
-      var index = _index;
-      var state = _state;
-      var total = _total;
-      var acc = _acc;
-      if (index === lines.length) {
-        return acc.concat([total]);
-      }
-      var items = Caml_array.caml_array_get(lines, index).split(",");
-      if (items.length >= total.length) {
-        var countyState = Caml_array.caml_array_get(items, 2);
-        if (countyState === state) {
-          _index = index + 1 | 0;
-          _total = addCases(total, items.slice(4));
-          continue ;
-        }
-        if (state !== "") {
-          _index = index + 1 | 0;
-          _state = countyState;
-          _total = Belt_Array.make(total.length, 0.0);
-          _acc = acc.concat([total]);
-          continue ;
-        }
-        _index = index + 1 | 0;
-        _state = countyState;
-        continue ;
-      }
-      _index = index + 1 | 0;
-      continue ;
-    };
-  };
-  var makeStateArray = function (statePopulations, stateCases) {
-    var _acc = [];
-    var _index = 0;
-    while(true) {
-      var index = _index;
-      var acc = _acc;
-      if (index === stateCases.length) {
-        return acc;
-      }
-      var len = Caml_array.caml_array_get(stateCases, index).length;
-      var total = Caml_array.caml_array_get(Caml_array.caml_array_get(stateCases, index), len - 1 | 0);
-      _index = index + 1 | 0;
-      _acc = acc.concat([{
-              name: Caml_array.caml_array_get(statePopulations, index)[0],
-              population: Caml_array.caml_array_get(statePopulations, index)[1],
-              cumulativeCasesPerDay: Caml_array.caml_array_get(stateCases, index),
-              totalCases: total,
-              pastWeekCases: total - Caml_array.caml_array_get(Caml_array.caml_array_get(stateCases, index), len - 8 | 0)
-            }]);
-      continue ;
-    };
-  };
-  var popLines = population.split("\n");
-  var statePopulations = processPopulation(popLines, [], 0.0, "", 1);
-  var caseLines = cases.split("\n");
-  var caseHeader = Caml_array.caml_array_get(caseLines, 0);
-  var dates = caseHeader.split(",").slice(4);
-  var emptyTotals = Belt_Array.make(dates.length, 0.0);
-  var stateCases = processCases(caseLines, [], emptyTotals, "", 1);
-  csv.dates = dates;
-  csv.states = makeStateArray(statePopulations, stateCases);
-  console.log(Caml_array.caml_array_get(csv.states, 0));
+function byTotal(indexA, indexB) {
+  var states = Data$Covid_stats.csv.states;
+  var totalA = pageState.period === /* All */0 ? Caml_array.caml_array_get(states, indexA).totalCases : Caml_array.caml_array_get(states, indexA).pastWeekCases;
+  var totalB = pageState.period === /* All */0 ? Caml_array.caml_array_get(states, indexB).totalCases : Caml_array.caml_array_get(states, indexB).pastWeekCases;
+  var valueA = totalA / (
+    pageState.col === /* Total */1 ? 1.0 : Caml_array.caml_array_get(states, indexA).population * 100000.0
+  );
+  var valueB = totalB / (
+    pageState.col === /* Total */1 ? 1.0 : Caml_array.caml_array_get(states, indexB).population * 100000.0
+  );
+  var result = valueA > valueB || valueA >= valueB ? 1 : 0;
+  if (pageState.dir === /* Ascending */0) {
+    return result;
+  } else {
+    return -result | 0;
+  }
+}
+
+function to100K(x, index) {
+  return x / Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).population * 100000.0;
+}
+
+function makeRow(index) {
+  console.log(String(index));
+  var tr = document.createElement("tr");
+  var td1 = document.createElement("td");
+  td1.innerHTML = Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).name;
+  var td2 = document.createElement("td");
+  td2.innerHTML = Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).totalCases.toFixed(0);
+  var td3 = document.createElement("td");
+  td3.innerHTML = to100K(Caml_array.caml_array_get(Data$Covid_stats.csv.states, index).totalCases, index).toFixed(2);
+  tr.appendChild(td1);
+  tr.appendChild(td2);
+  tr.appendChild(td3);
+  var table = document.getElementById("tableBody");
+  if (!(table == null)) {
+    table.appendChild(tr);
+    return ;
+  }
   
 }
 
-function getPopulation(cases) {
-  return fetch("covid_county_population_usafacts.csv").then(function (prim) {
-                return prim.text();
-              }).then(function (population) {
-              return Promise.resolve(analyzeData(cases, population));
-            });
-}
-
-function fetchData(param) {
-  return fetch("covid_confirmed_usafacts.csv").then(function (prim) {
-                return prim.text();
-              }).then(function (cases) {
-              return Promise.resolve(getPopulation(cases));
-            });
+function renderFirstData(param) {
+  console.log("Checking states length: ", Data$Covid_stats.csv.states.length);
+  if (Data$Covid_stats.csv.states.length !== 0) {
+    pageState.indices = Belt_Array.makeBy(Data$Covid_stats.csv.states.length, (function (i) {
+            return i;
+          }));
+    Belt_Array.map(pageState.indices, makeRow);
+  } else {
+    setTimeout(renderFirstData, 1000);
+  }
+  
 }
 
 console.log("About to fetch data");
 
-fetchData(undefined);
+Data$Covid_stats.fetchData(undefined);
 
-exports.csv = csv;
-exports.monthNames = monthNames;
-exports.analyzeData = analyzeData;
-exports.getPopulation = getPopulation;
-exports.fetchData = fetchData;
+renderFirstData(undefined);
+
+exports.pageState = pageState;
+exports.byStateName = byStateName;
+exports.byTotal = byTotal;
+exports.to100K = to100K;
+exports.makeRow = makeRow;
+exports.renderFirstData = renderFirstData;
 /*  Not a pure module */

@@ -23,23 +23,25 @@
     <thead>
       <tr>
         <th>State
-          <span class="arrow">&uarr;</span>
-          <span class="arrow">&darr;</span> &nbsp;
+          <span class="arrow" id="state_ascending">&uarr;</span>
+          <span class="arrow" id="state_descending">&darr;</span> &nbsp;
         </th>
         <th>Total Cases
-          <span class="arrow">&uarr;</span>
-          <span class="arrow">&darr;</span> &nbsp;
+          <span class="arrow" id="total_ascending">&uarr;</span>
+          <span class="arrow" id="total_descending">&darr;</span> &nbsp;
         </th>
         <th>Cases Per 100K
-          <span class="arrow">&uarr;</span>
-          <span class="arrow">&darr;</span> &nbsp;
+          <span class="arrow" id="per100K_ascending">&uarr;</span>
+          <span class="arrow" id="per100K_descending">>&darr;</span> &nbsp;
         </th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tableBody">
     </tbody>
   </table>
-     
+  <script type="text/javascript">
+  console.log(document.getElementById("tableBody"));
+  </script>
   <script type="text/javascript" src="Covid19.bs.js"></script>
 </body>
 </html>
