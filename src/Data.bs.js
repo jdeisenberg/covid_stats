@@ -10,21 +10,6 @@ var csv = {
   states: []
 };
 
-var monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
-];
-
 function analyzeData(cases, population) {
   var processPopulation = function (lines, _acc, _total, _state, _index) {
     while(true) {
@@ -112,7 +97,6 @@ function analyzeData(cases, population) {
       if (index === stateCases.length) {
         return acc;
       }
-      console.log(index, Caml_array.caml_array_get(statePopulations, index)[0]);
       var len = Caml_array.caml_array_get(stateCases, index).length;
       var total = Caml_array.caml_array_get(Caml_array.caml_array_get(stateCases, index), len - 1 | 0);
       _index = index + 1 | 0;
@@ -138,25 +122,6 @@ function analyzeData(cases, population) {
   
 }
 
-function getPopulation(cases) {
-  return fetch("covid_county_population_usafacts.csv").then(function (prim) {
-                return prim.text();
-              }).then(function (population) {
-              return Promise.resolve(analyzeData(cases, population));
-            });
-}
-
-function fetchData(param) {
-  return fetch("covid_confirmed_usafacts.csv").then(function (prim) {
-                return prim.text();
-              }).then(function (cases) {
-              return Promise.resolve(getPopulation(cases));
-            });
-}
-
 exports.csv = csv;
-exports.monthNames = monthNames;
 exports.analyzeData = analyzeData;
-exports.getPopulation = getPopulation;
-exports.fetchData = fetchData;
 /* No side effect */
