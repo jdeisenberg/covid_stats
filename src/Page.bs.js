@@ -14,12 +14,16 @@ function columnToString(col) {
         return "Total";
     case /* Per100K */2 :
         return "Per100K";
+    case /* PctChange */3 :
+        return "PctChange";
     
   }
 }
 
 function columnFromString(s) {
   switch (s) {
+    case "PctChange" :
+        return /* PctChange */3;
     case "Per100K" :
         return /* Per100K */2;
     case "Total" :
@@ -146,6 +150,10 @@ function sortIndices(indices) {
   }
 }
 
+function toFixed(prim, prim$1) {
+  return prim.toFixed(prim$1);
+}
+
 function makeRow(absoluteIndex, rankIndex) {
   var tr = document.createElement("tr");
   var td0 = document.createElement("td");
@@ -160,10 +168,21 @@ function makeRow(absoluteIndex, rankIndex) {
   td3.setAttribute("class", "rightAlign");
   var perCapita = pageState.period === /* All */0 ? Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).totalCases : Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).pastWeekCases;
   td3.innerHTML = to100K(perCapita, rankIndex).toFixed(2);
+  var td4 = document.createElement("td");
+  var arr = Caml_array.caml_array_get(Data$Covid_stats.csv.states, rankIndex).cumulativeCasesPerDay;
+  var len = arr.length;
+  var twoWeeksAgo = Caml_array.caml_array_get(arr, len - 8 | 0) - Caml_array.caml_array_get(arr, len - 14 | 0);
+  var oneWeekAgo = Caml_array.caml_array_get(arr, len - 1 | 0) - Caml_array.caml_array_get(arr, len - 7 | 0);
+  var pct = 100.0 * (oneWeekAgo - twoWeeksAgo) / twoWeeksAgo;
+  td4.innerHTML = (
+    pct < 0.0 ? "" : "+"
+  ) + pct.toFixed(1) + "%";
+  td4.setAttribute("class", pct < 0.0 ? "decrease rightAlign" : "increase rightAlign");
   tr.appendChild(td0);
   tr.appendChild(td1);
   tr.appendChild(td2);
   tr.appendChild(td3);
+  tr.appendChild(td4);
   var table = document.getElementById("tableBody");
   if (!(table == null)) {
     table.appendChild(tr);
@@ -288,6 +307,7 @@ exports.byStateName = byStateName;
 exports.byTotal = byTotal;
 exports.setHeaders = setHeaders;
 exports.sortIndices = sortIndices;
+exports.toFixed = toFixed;
 exports.makeRow = makeRow;
 exports.removeChildren = removeChildren;
 exports.drawTable = drawTable;

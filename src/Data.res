@@ -18,6 +18,14 @@ let csv: csvInfo = {
 
 type popInfo = (string, float);
 
+let reduceRange = (arr: array<'a>, acc: 'b, f: ('b, 'a) => 'b, start: int, finish: int) => {
+  let limit = min(finish, Belt.Array.length(arr))
+  let rec helper = (index:int, acc: 'b): 'b => {
+    (index == limit) ? acc : helper(index + 1, f(acc, arr[index]))
+  }
+  helper(max(start, 0), acc)
+}
+
 let analyzeData = (cases: string, population: string) => {
   open Js.Array2;
   
